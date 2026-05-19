@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Учебная нагрузка кафедры - полное отображение A-BU + очная/заочная</title>
+    <title>Учебная нагрузка кафедры - карточки по семестрам (1 и 2 семестр) по шаблону</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
@@ -11,7 +11,6 @@
         table { font-size: 9px; min-width: 3800px; border-collapse: collapse; background: white; }
         th { background-color: #1a3a5c; color: white; position: sticky; top: 0; z-index: 10; padding: 6px 4px; border: 1px solid #3a5a7c; white-space: nowrap; font-weight: 600; }
         td { padding: 4px 3px; border: 1px solid #dee2e6; vertical-align: middle; font-size: 9px; }
-        .direction-row { background-color: #d4edda !important; font-weight: bold; }
         .teacher-select { min-width: 140px; font-size: 9px; border-radius: 4px; }
         .assigned-badge { background-color: #28a745; color: white; padding: 1px 5px; border-radius: 10px; font-size: 8px; margin-left: 4px; }
         .stats-card { background: linear-gradient(135deg, #1a3a5c 0%, #2c5a7c 100%); color: white; border-radius: 10px; padding: 12px; margin-bottom: 15px; }
@@ -19,15 +18,22 @@
         .study-form-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 9px; font-weight: bold; }
         .form-och { background-color: #198754; color: white; }
         .form-zao { background-color: #fd7e14; color: white; }
-        .teacher-card { border-radius: 12px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 24px; }
-        .table-responsive-sm { max-height: 500px; overflow-y: auto; }
         .print-btn { position: fixed; bottom: 20px; right: 20px; z-index: 1000; border-radius: 40px; }
         @media print { .print-btn, .no-print { display: none; } }
+        /* стили для карточек */
+        .card-portfolio { max-width: 1300px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); overflow: hidden; }
+        .card-header-custom { background: linear-gradient(135deg, #1a3a5c, #2c5a7c); color: white; padding: 16px 20px; }
+        .semester-title { background: #e9ecef; padding: 8px 15px; font-weight: bold; border-left: 4px solid #1a3a5c; margin: 20px 0 12px; font-size: 1.2rem; }
+        .total-row { background-color: #d1e7dd; font-weight: bold; }
+        .table-bordered th, .table-bordered td { font-size: 9px; padding: 4px 6px; vertical-align: middle; }
+        .form-badge-och { background-color: #0d6efd; color: white; padding: 2px 6px; border-radius: 4px; font-size: 8px; display: inline-block; white-space: nowrap; }
+        .form-badge-zao { background-color: #fd7e14; color: white; padding: 2px 6px; border-radius: 4px; font-size: 8px; display: inline-block; white-space: nowrap; }
+        .header-signatures { margin-top: 25px; border-top: 1px solid #dee2e6; padding-top: 20px; }
     </style>
 </head>
 <body>
 <div class="container-fluid mt-2">
-    <h1 class="mb-3" style="font-size: 1.5rem;">📊 Учебная нагрузка кафедры (полное отображение A-BU + очная/заочная)</h1>
+    <h1 class="mb-3" style="font-size: 1.5rem;">📊 Учебная нагрузка кафедры + Карточки поручений (1 семестр / 2 семестр)</h1>
 
     <div class="row mb-3">
         <div class="col-md-4">
@@ -47,13 +53,11 @@
         </div>
         <div class="col-md-4">
             <div class="card bg-success text-white h-100"><div class="card-body py-2 text-center">
-                <h6 class="mb-0">📌 1 ставка = 720 ч.</h6>
-                <small>Всего часов (столбец BS, индекс 70)</small>
+                <h6 class="mb-0">📌 1 ставка = 900 ч.</h6>
+                <small>Всего часов (столбец BS)</small>
             </div></div>
         </div>
     </div>
-
-    <div id="loading" class="text-center" style="display: none;"><div class="spinner-border text-primary"></div><p>Обработка...</p></div>
 
     <div id="assignmentControls" style="display: none;">
         <div class="stats-card">
@@ -83,30 +87,26 @@
             <button id="assignAllBtn" class="btn btn-success btn-sm"><i class="bi bi-check-all"></i> Автораспределение</button>
             <button id="showSummaryBtn" class="btn btn-primary btn-sm"><i class="bi bi-table"></i> Сводная таблица</button>
             <button id="resetAssignmentsBtn" class="btn btn-secondary btn-sm"><i class="bi bi-arrow-counterclockwise"></i> Сбросить</button>
-            <button id="showTeacherCardsBtn" class="btn btn-warning btn-sm"><i class="bi bi-person-badge"></i> Карточки ППС</button>
-            <button id="exportDataBtn" class="btn btn-info btn-sm"><i class="bi bi-file-excel"></i> Экспорт Excel</button>
-            <button id="generateAssignmentCardsBtn" class="btn btn-success btn-sm"><i class="bi bi-files"></i> Карточки уч. поручений</button>
+            <button id="generateCardsBtn" class="btn btn-warning btn-sm"><i class="bi bi-files"></i> Карточки поручений (1 и 2 семестр)</button>
         </div>
         <hr>
     </div>
 
     <div id="results"></div>
-
-    <!-- Модальное окно сводки -->
-    <div class="modal fade" id="summaryModal" tabindex="-1"><div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5>📊 Сводка нагрузки преподавателей</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><table class="table table-bordered" id="summaryTable"><thead id="summaryHeader"></thead><tbody id="summaryBody"></tbody></table></div></div></div></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
-// ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
-let currentTeachers = [];           // { fullName, position, degree, title, employmentType }
-let currentAssignments = {};        // key: "row_{индекс}_form", value: teacherName
-let allDisciplines = [];            // { rowIndex, studyForm, direction, discipline, semester, course, formControl, hoursTotal, budgetHours, extraHours, cellsArray, lectures, practical, exams, tests, kr, kp, studentsBudget, studentsExtra, groupsBudget, groupsExtra }
+// ==================== ГЛОБАЛЬНЫЕ ====================
+let currentTeachers = [];          // { fullName, position, degree, title }
+let currentAssignments = {};       // key: "row_{rowIndex}_form"
+let allDisciplines = [];
 let directionSet = new Set();
+const RATE_HOURS = 900;            // 1 ставка = 900 часов
 
-// Индексы столбцов (0-based) на основе файла
+// Индексы столбцов (0-based) из вашего файла нагрузки
 const COL = {
     A:0, B:1, C:2, D:3, E:4, F:5, G:6, H:7, I:8, J:9, K:10, L:11, M:12, N:13, O:14, P:15,
     Q:16, R:17, S:18, T:19, U:20, V:21, W:22, X:23, Y:24, Z:25, AA:26, AB:27, AC:28, AD:29, AE:30, AF:31,
@@ -115,12 +115,6 @@ const COL = {
     BQ:68, BR:69, BS:70, BT:71, BU:72
 };
 
-// Названия столбцов для шапки (A-BU)
-const columnNames = [];
-for (let i = 0; i <= 72; i++) {
-    let letter = getColumnLetter(i);
-    columnNames[i] = letter;
-}
 function getColumnLetter(idx) {
     const letters = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
         'AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR','AS','AT','AU','AV','AW','AX','AY','AZ',
@@ -128,16 +122,13 @@ function getColumnLetter(idx) {
     return letters[idx] || String(idx);
 }
 
-// ==================== ПАРСИНГ ФАЙЛА (НЕ ИЗМЕНЯЕТСЯ) ====================
+// ==================== ПАРСИНГ ФАЙЛА НАГРУЗКИ ====================
 function parseExcelFile(rawData) {
     allDisciplines = [];
     directionSet.clear();
-    currentAssignments = {};
-
     parseFormRange(rawData, 12, 69, 'Очная');
     parseFormRange(rawData, 77, 166, 'Заочная');
-
-    console.log(`Загружено дисциплин: очных - ${allDisciplines.filter(d => d.studyForm === 'Очная').length}, заочных - ${allDisciplines.filter(d => d.studyForm === 'Заочная').length}`);
+    console.log(`Загружено дисциплин: ${allDisciplines.length}`);
     return true;
 }
 
@@ -146,10 +137,9 @@ function parseFormRange(rawData, startRow, endRow, studyForm) {
     for (let i = startRow; i <= endRow && i < rawData.length; i++) {
         let row = rawData[i];
         if (!row || row.length === 0) continue;
-
         let colA = (row[COL.A] !== undefined && row[COL.A] !== '') ? String(row[COL.A]).trim() : '';
         let colB = (row[COL.B] !== undefined && row[COL.B] !== '') ? String(row[COL.B]).trim() : '';
-
+        if (colB.includes('ИТОГО') || colB.includes('Руководство')) continue;
         let isDirection = false;
         if (colA && (!colB || colB === '') && 
             (colA.match(/^\d{2}\.\d{2}\.\d{2}/) || colA.includes('Зоотехния') || colA.includes('Ветеринария') || 
@@ -161,22 +151,26 @@ function parseFormRange(rawData, startRow, endRow, studyForm) {
             }
             continue;
         }
-
         let discipline = colB;
-        if (discipline && !discipline.includes('ИТОГО') && !discipline.includes('Руководство')) {
+        if (discipline && discipline !== '' && !discipline.includes('ИТОГО') && !discipline.includes('Руководство')) {
             let cells = [];
             for (let c = 0; c <= 72; c++) {
                 let val = (c < row.length && row[c] !== undefined && row[c] !== null) ? row[c] : '';
                 if (typeof val === 'object') val = JSON.stringify(val);
                 cells.push(String(val).trim());
             }
-
             let hoursTotal = parseFloat(cells[COL.BS]) || 0;
             let budgetHours = parseFloat(cells[COL.BQ]) || 0;
             let extraHours = parseFloat(cells[COL.BR]) || 0;
             let semester = parseInt(cells[COL.H]) || 0;
             let course = cells[COL.I] || '';
             let formControl = cells[COL.C] || '';
+            let lectures = parseFloat(cells[COL.D]) || 0;
+            let practical = parseFloat(cells[COL.F]) || 0;   // практические / лабораторные
+            let exams = parseFloat(cells[COL.T]) || 0;
+            let tests = parseFloat(cells[COL.U]) || 0;
+            let kr = parseFloat(cells[COL.W]) || 0;   // КР
+            let kp = parseFloat(cells[COL.X]) || 0;   // КП
 
             allDisciplines.push({
                 rowIndex: i,
@@ -190,35 +184,55 @@ function parseFormRange(rawData, startRow, endRow, studyForm) {
                 budgetHours: budgetHours,
                 extraHours: extraHours,
                 cells: cells,
-                lectures: parseFloat(cells[3]) || 0,
-                practical: parseFloat(cells[5]) || 0,
-                exams: parseFloat(cells[19]) || 0,
-                tests: parseFloat(cells[20]) || 0,
-                kr: parseFloat(cells[20]) || 0,
-                kp: parseFloat(cells[21]) || 0,
-                studentsBudget: parseInt(cells[9]) || 0,
-                studentsExtra: parseInt(cells[10]) || 0,
-                groupsBudget: parseInt(cells[12]) || 0,
-                groupsExtra: parseInt(cells[13]) || 0,
-                extraWork: 0, consultations: 0, courseWork: 0, courseProject: 0,
-                controlWork: 0, briefing: 0, guidance: 0, defenseReports: 0,
-                wkrSupervision: 0, reviewLectures: 0, sek: 0, postgraduate: 0, management: 0
+                lectures: lectures,
+                practical: practical,
+                exams: exams,
+                tests: tests,
+                kr: kr,
+                kp: kp,
+                studentsBudget: parseInt(cells[COL.J]) || 0,
+                studentsExtra: parseInt(cells[COL.K]) || 0,
+                groupsBudget: parseInt(cells[COL.M]) || 0,
+                groupsExtra: parseInt(cells[COL.N]) || 0
             });
         }
     }
 }
 
-// ==================== UI ОБНОВЛЕНИЯ ====================
+function getRowKey(d) { return `row_${d.rowIndex}_${d.studyForm}`; }
+
+function loadTeachers(fileData) {
+    currentTeachers = [];
+    for (let i = 1; i < fileData.length; i++) {
+        let row = fileData[i];
+        if (!row || row.length < 2) continue;
+        let lastName = (row[0] || '').toString().trim();
+        let firstName = (row[1] || '').toString().trim();
+        let middleName = (row[2] || '').toString().trim();
+        let position = (row[5] || '').toString().trim() || 'преподаватель';
+        let degree = (row[3] || '').toString().trim();
+        let title = (row[4] || '').toString().trim();
+        if (!lastName) continue;
+        let fullName = lastName;
+        if (firstName) fullName += ' ' + firstName.charAt(0) + '.';
+        if (middleName) fullName += ' ' + middleName.charAt(0) + '.';
+        currentTeachers.push({ fullName, position, degree, title });
+    }
+    document.getElementById('teachersCount').textContent = currentTeachers.length;
+    alert(`Загружено ${currentTeachers.length} преподавателей`);
+    if (allDisciplines.length) renderFullTable();
+    updateStatistics();
+}
+
 function updateStatistics() {
     let totalDisc = allDisciplines.length;
     let assigned = Object.keys(currentAssignments).filter(id => currentAssignments[id]).length;
     let totalHours = allDisciplines.reduce((sum, d) => sum + (d.hoursTotal || 0), 0);
-    
     document.getElementById('totalDisciplines').textContent = totalDisc;
     document.getElementById('assignedCount').textContent = assigned;
     document.getElementById('unassignedCount').textContent = totalDisc - assigned;
     document.getElementById('totalHoursSum').textContent = Math.round(totalHours);
-    document.getElementById('totalStavki').textContent = (totalHours / 720).toFixed(2);
+    document.getElementById('totalStavki').textContent = (totalHours / RATE_HOURS).toFixed(2);
     if (currentTeachers.length) document.getElementById('teachersCount').textContent = currentTeachers.length;
 
     let dirFilter = document.getElementById('directionFilter');
@@ -255,7 +269,6 @@ function updateStatistics() {
     }
 }
 
-// ==================== ОТОБРАЖЕНИЕ ПОЛНОЙ ТАБЛИЦЫ ====================
 function renderFullTable() {
     let filterDisc = (document.getElementById('disciplineFilter')?.value || '').toLowerCase();
     let filterDir = document.getElementById('directionFilter')?.value || '';
@@ -278,66 +291,38 @@ function renderFullTable() {
 
     let container = document.getElementById('results');
     container.innerHTML = '';
-    
     let tableContainer = document.createElement('div');
     tableContainer.className = 'table-container';
     let table = document.createElement('table');
     table.className = 'table-bordered';
-    
     let thead = document.createElement('thead');
     let headerRow = document.createElement('tr');
-    
-    let thDir = document.createElement('th');
-    thDir.textContent = 'Направление';
-    thDir.style.minWidth = '180px';
-    headerRow.appendChild(thDir);
-    
-    let thForm = document.createElement('th');
-    thForm.textContent = 'Форма';
-    thForm.style.minWidth = '70px';
-    headerRow.appendChild(thForm);
-    
+    let thDir = document.createElement('th'); thDir.textContent = 'Направление'; thDir.style.minWidth = '180px'; headerRow.appendChild(thDir);
+    let thForm = document.createElement('th'); thForm.textContent = 'Форма'; thForm.style.minWidth = '70px'; headerRow.appendChild(thForm);
     for (let i = 0; i <= 72; i++) {
         let th = document.createElement('th');
-        th.textContent = columnNames[i];
+        th.textContent = getColumnLetter(i);
         th.style.minWidth = i === COL.B ? '180px' : '50px';
         th.style.fontSize = '9px';
         headerRow.appendChild(th);
     }
-    
-    let thTeacher = document.createElement('th');
-    thTeacher.textContent = '👨‍🏫 Преподаватель';
-    thTeacher.style.minWidth = '150px';
-    headerRow.appendChild(thTeacher);
-    
+    let thTeacher = document.createElement('th'); thTeacher.textContent = '👨‍🏫 Преподаватель'; thTeacher.style.minWidth = '150px'; headerRow.appendChild(thTeacher);
     thead.appendChild(headerRow);
     table.appendChild(thead);
-    
     let tbody = document.createElement('tbody');
     filtered.forEach(d => {
         let tr = document.createElement('tr');
         let rowKey = getRowKey(d);
         let teacher = currentAssignments[rowKey] || '';
-        
-        let tdDir = document.createElement('td');
-        tdDir.textContent = d.direction;
-        tdDir.style.whiteSpace = 'nowrap';
-        tr.appendChild(tdDir);
-        
-        let tdForm = document.createElement('td');
-        tdForm.innerHTML = `<span class="study-form-badge ${d.studyForm === 'Очная' ? 'form-och' : 'form-zao'}">${d.studyForm === 'Очная' ? '🏫 Очная' : '🌙 Заочная'}</span>`;
-        tr.appendChild(tdForm);
-        
+        let tdDir = document.createElement('td'); tdDir.textContent = d.direction; tdDir.style.whiteSpace = 'nowrap'; tr.appendChild(tdDir);
+        let tdForm = document.createElement('td'); tdForm.innerHTML = `<span class="study-form-badge ${d.studyForm === 'Очная' ? 'form-och' : 'form-zao'}">${d.studyForm === 'Очная' ? '🏫 Очная' : '🌙 Заочная'}</span>`; tr.appendChild(tdForm);
         for (let i = 0; i <= 72; i++) {
             let td = document.createElement('td');
             let val = d.cells[i] || '';
             td.textContent = val === '' ? '—' : val;
-            td.className = 'cell-value';
-            if (i === COL.BS) td.style.fontWeight = 'bold';
-            if (i === COL.BS) td.style.backgroundColor = '#cfe2ff';
+            if (i === COL.BS) { td.style.fontWeight = 'bold'; td.style.backgroundColor = '#cfe2ff'; }
             tr.appendChild(td);
         }
-        
         let tdTeacher = document.createElement('td');
         let selectHtml = `<select class="teacher-select" data-key="${rowKey}"><option value="">-- Выберите --</option>`;
         currentTeachers.forEach(t => {
@@ -347,14 +332,11 @@ function renderFullTable() {
         if (teacher) selectHtml += `<span class="assigned-badge">✓</span>`;
         tdTeacher.innerHTML = selectHtml;
         tr.appendChild(tdTeacher);
-        
         tbody.appendChild(tr);
     });
-    
     table.appendChild(tbody);
     tableContainer.appendChild(table);
     container.appendChild(tableContainer);
-    
     document.querySelectorAll('.teacher-select').forEach(sel => {
         sel.addEventListener('change', (e) => {
             let key = sel.getAttribute('data-key');
@@ -368,31 +350,15 @@ function renderFullTable() {
     });
 }
 
-function getRowKey(d) {
-    return `row_${d.rowIndex}_${d.studyForm}`;
-}
-
-function loadAssignmentsFromStorage() {
-    let saved = localStorage.getItem('teacherAssignments_full');
-    if (saved) {
-        try {
-            currentAssignments = JSON.parse(saved);
-        } catch(e) { currentAssignments = {}; }
-    }
-}
-
-// ==================== АВТОРАСПРЕДЕЛЕНИЕ ====================
 function autoAssignTeachers() {
     if (!currentTeachers.length) { alert('Сначала загрузите состав кафедры'); return; }
     let unassigned = allDisciplines.filter(d => !currentAssignments[getRowKey(d)]);
     if (!unassigned.length) { alert('Все дисциплины уже назначены'); return; }
-    
     let teacherLoad = {};
     for (let [key, teacher] of Object.entries(currentAssignments)) {
         let disc = allDisciplines.find(d => getRowKey(d) === key);
         if (disc) teacherLoad[teacher] = (teacherLoad[teacher] || 0) + disc.hoursTotal;
     }
-    
     for (let disc of unassigned) {
         let minTeacher = currentTeachers[0]?.fullName || '';
         let minLoad = Infinity;
@@ -413,218 +379,205 @@ function autoAssignTeachers() {
     renderFullTable();
 }
 
-// ==================== СВОДНАЯ ТАБЛИЦА ====================
 function showSummaryModal() {
     let teacherMap = new Map();
     for (let disc of allDisciplines) {
         let teacher = currentAssignments[getRowKey(disc)];
         if (!teacher) continue;
-        if (!teacherMap.has(teacher)) {
-            teacherMap.set(teacher, { total:0, budget:0, extra:0, count:0, ochn:0, zaochn:0 });
-        }
+        if (!teacherMap.has(teacher)) teacherMap.set(teacher, { total:0, count:0 });
         let d = teacherMap.get(teacher);
         d.total += disc.hoursTotal;
-        d.budget += disc.budgetHours;
-        d.extra += disc.extraHours;
         d.count++;
-        if (disc.studyForm === 'Очная') d.ochn++;
-        else d.zaochn++;
     }
-    for (let t of currentTeachers) {
-        if (!teacherMap.has(t.fullName)) teacherMap.set(t.fullName, { total:0, budget:0, extra:0, count:0, ochn:0, zaochn:0 });
-    }
-    
+    for (let t of currentTeachers) if (!teacherMap.has(t.fullName)) teacherMap.set(t.fullName, { total:0, count:0 });
     let sorted = [...teacherMap.entries()].sort();
     let thead = document.getElementById('summaryHeader');
     let tbody = document.getElementById('summaryBody');
-    thead.innerHTML = `<tr><th>Преподаватель</th><th>Должность</th><th>Бюджет (ч)</th><th>Внебюджет</th><th>Всего часов</th><th>Ставки</th><th>Дисциплин</th><th>Очная</th><th>Заочная</th></tr>`;
+    thead.innerHTML = `<table><th>Преподаватель</th><th>Должность</th><th>Всего часов</th><th>Ставки</th><th>Дисциплин</th></tr>`;
     tbody.innerHTML = '';
     let grandTotal = 0;
     for (let [name, data] of sorted) {
         let pos = currentTeachers.find(t => t.fullName === name)?.position || '';
         grandTotal += data.total;
         let tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><strong>${escapeHtml(name)}</strong></td>
-            <td>${escapeHtml(pos)}</td>
-            <td class="text-end">${data.budget.toFixed(1)}</td>
-            <td class="text-end">${data.extra.toFixed(1)}</td>
-            <td class="text-end fw-bold">${data.total.toFixed(1)}</td>
-            <td class="text-end">${(data.total/720).toFixed(2)}</td>
-            <td class="text-end">${data.count}</td>
-            <td class="text-end">${data.ochn}</td>
-            <td class="text-end">${data.zaochn}</td>
-        `;
+        tr.innerHTML = `<td><strong>${escapeHtml(name)}</strong></td><td>${escapeHtml(pos)}</td><td class="text-end">${data.total.toFixed(1)}</td><td class="text-end">${(data.total/RATE_HOURS).toFixed(2)}</td><td class="text-end">${data.count}</td>`;
         tbody.appendChild(tr);
     }
     let totalTr = document.createElement('tr');
     totalTr.className = 'table-info';
-    totalTr.innerHTML = `<td colspan="4"><strong>ИТОГО ПО КАФЕДРЕ</strong></td><td class="fw-bold">${grandTotal.toFixed(1)}</td><td class="fw-bold">${(grandTotal/720).toFixed(2)}</td><td colspan="3"></td>`;
+    totalTr.innerHTML = `<td colspan="2"><strong>ИТОГО ПО КАФЕДРЕ</strong></td><td class="fw-bold">${grandTotal.toFixed(1)}</td><td class="fw-bold">${(grandTotal/RATE_HOURS).toFixed(2)}</td><td></td>`;
     tbody.appendChild(totalTr);
-    
     new bootstrap.Modal(document.getElementById('summaryModal')).show();
 }
 
-// ==================== КАРТОЧКИ УЧЕБНЫХ ПОРУЧЕНИЙ (НОВЫЙ МОДУЛЬ) ====================
-function generateTeacherAssignmentCard(teacherName, teacherInfo, disciplines, academicYear = "2025 / 2026") {
-    const firstSemesterDiscs = disciplines.filter(d => d.semester && d.semester % 2 === 1);
-    const secondSemesterDiscs = disciplines.filter(d => d.semester && d.semester % 2 === 0);
-    const undefinedSemester = disciplines.filter(d => !d.semester || d.semester === 0);
-    firstSemesterDiscs.push(...undefinedSemester);
-    
+// ==================== ГЕНЕРАЦИЯ КАРТОЧЕК ПО СЕМЕСТРАМ (1 и 2 семестр) ====================
+function generateTeacherCards(teacherName, teacherInfo, allTeacherDiscs, academicYear = "2025 / 2026") {
+    // Разделение на четный (2) и нечетный (1) семестры
+    const firstSemesterDiscs = allTeacherDiscs.filter(d => d.semester && d.semester % 2 === 1);
+    const secondSemesterDiscs = allTeacherDiscs.filter(d => d.semester && d.semester % 2 === 0);
+    // сортировка по семестру
     firstSemesterDiscs.sort((a,b) => (a.semester || 99) - (b.semester || 99));
     secondSemesterDiscs.sort((a,b) => (a.semester || 99) - (b.semester || 99));
     
-    const firstTotals = calcTotals(firstSemesterDiscs);
-    const secondTotals = calcTotals(secondSemesterDiscs);
+    const firstTotals = computeTotals(firstSemesterDiscs);
+    const secondTotals = computeTotals(secondSemesterDiscs);
     
-    const yearTotals = {
-        lectures: firstTotals.lectures + secondTotals.lectures,
-        lpz: firstTotals.lpz + secondTotals.lpz,
-        extraWork: firstTotals.extraWork + secondTotals.extraWork,
-        consultations: firstTotals.consultations + secondTotals.consultations,
-        exams: firstTotals.exams + secondTotals.exams,
-        credits: firstTotals.credits + secondTotals.credits,
-        courseWorks: firstTotals.courseWorks + secondTotals.courseWorks,
-        courseProjects: firstTotals.courseProjects + secondTotals.courseProjects,
-        controlWorks: firstTotals.controlWorks + secondTotals.controlWorks,
-        briefing: firstTotals.briefing + secondTotals.briefing,
-        guidance: firstTotals.guidance + secondTotals.guidance,
-        defenseReports: firstTotals.defenseReports + secondTotals.defenseReports,
-        wkrSupervision: firstTotals.wkrSupervision + secondTotals.wkrSupervision,
-        reviewLectures: firstTotals.reviewLectures + secondTotals.reviewLectures,
-        sek: firstTotals.sek + secondTotals.sek,
-        postgraduate: firstTotals.postgraduate + secondTotals.postgraduate,
-        management: firstTotals.management + secondTotals.management,
-        budget: firstTotals.budget + secondTotals.budget,
-        extraBudget: firstTotals.extraBudget + secondTotals.extraBudget,
-        total: firstTotals.total + secondTotals.total
-    };
+    const yearTotalHours = firstTotals.total + secondTotals.total;
+    const stavka = (yearTotalHours / RATE_HOURS).toFixed(2);
     
-    return `<!DOCTYPE html>
-<html lang="ru">
-<head><meta charset="UTF-8"><title>Карточка учебных поручений - ${escapeHtml(teacherName)}</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<style>
-    body { background: #f5f5f5; padding: 30px; font-family: 'Times New Roman', Times, serif; }
-    .card-portfolio { max-width: 1200px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); overflow: hidden; }
-    .card-header-custom { background: linear-gradient(135deg, #1a3a5c, #2c5a7c); color: white; padding: 20px; }
-    .semester-title { background: #e9ecef; padding: 8px 15px; font-weight: bold; border-left: 4px solid #1a3a5c; margin: 15px 0 10px; }
-    .total-row { background-color: #d1e7dd; font-weight: bold; }
-    .table th, .table td { font-size: 11px; padding: 6px; vertical-align: middle; }
-    .form-och { background-color: #0d6efd; color: white; padding: 2px 6px; border-radius: 4px; font-size: 9px; }
-    .form-zao { background-color: #fd7e14; color: white; padding: 2px 6px; border-radius: 4px; font-size: 9px; }
-    @media print { body { background: white; padding: 0; } .no-print { display: none; } }
-</style>
-</head>
-<body>
-<div class="card-portfolio">
-    <div class="card-header-custom">
-        <h3><i class="bi bi-person-badge"></i> Карточка учебных поручений</h3>
-        <div class="row mt-2">
-            <div class="col-md-8"><p><strong>Преподаватель:</strong> ${escapeHtml(teacherName)}<br><strong>Должность:</strong> ${escapeHtml(teacherInfo.position || 'преподаватель')}<br><strong>Учёная степень/звание:</strong> ${escapeHtml(teacherInfo.degree || '—')} / ${escapeHtml(teacherInfo.title || '—')}</p></div>
-            <div class="col-md-4 text-md-end"><p><strong>Ставка:</strong> ${(yearTotals.total / 720).toFixed(2)}<br><strong>Часов:</strong> ${yearTotals.total.toFixed(1)}<br><strong>Уч. год:</strong> ${academicYear}</p></div>
+    return `
+        <div class="card-portfolio mb-5" style="page-break-after: always;">
+            <div class="card-header-custom">
+                <h4>Карточка учебных поручений</h4>
+                <div class="row mt-2">
+                    <div class="col-md-7">
+                        <p><strong>Преподаватель:</strong> ${escapeHtml(teacherName)}<br>
+                        <strong>Должность:</strong> ${escapeHtml(teacherInfo.position)}<br>
+                        <strong>Ученая степень / звание:</strong> ${escapeHtml(teacherInfo.degree)} / ${escapeHtml(teacherInfo.title)}</p>
+                    </div>
+                    <div class="col-md-5 text-md-end">
+                        <p><strong>Ставка:</strong> ${stavka}<br>
+                        <strong>Часов:</strong> ${yearTotalHours.toFixed(1)}<br>
+                        <strong>Учебный год:</strong> ${academicYear}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-3">
+                ${buildSemesterTable("I семестр", firstSemesterDiscs, firstTotals)}
+                ${buildSemesterTable("II семестр", secondSemesterDiscs, secondTotals)}
+                
+                <div class="row header-signatures">
+                    <div class="col-md-6">
+                        <p>Директор департамента УМР _________________ О.С. Пхенда</p>
+                        <p>Зав. кафедрой _________________</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <p>Декан/Директор _________________</p>
+                        <p>Преподаватель _________________ ${escapeHtml(teacherName)}</p>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-    <div class="p-4">
-        ${generateSemesterTableHTML('I семестр', firstSemesterDiscs, firstTotals)}
-        ${generateSemesterTableHTML('II семестр', secondSemesterDiscs, secondTotals)}
-        
-        <div class="semester-title" style="background: #cfe2ff;">Итого за учебный год</div>
-        <table class="table table-bordered">
-            <thead class="table-secondary"><tr><th>Лекции</th><th>ЛПЗ</th><th>Отработка</th><th>Консультации</th><th>Экзамены</th><th>Зачеты</th><th>КР</th><th>КП</th><th>КР/раб.</th><th>Инструктаж</th><th>Руководство</th><th>Защита отч.</th><th>Рук. ВКР</th><th>Обзор. лекции</th><th>ГЭК</th><th>Аспиранты</th><th>Рук. каф.</th><th>Бюджет</th><th>Внебюджет</th><th>Всего</th></tr></thead>
-            <tbody><tr class="total-row">${['lectures','lpz','extraWork','consultations','exams','credits','courseWorks','courseProjects','controlWorks','briefing','guidance','defenseReports','wkrSupervision','reviewLectures','sek','postgraduate','management','budget','extraBudget','total'].map(k => `<td class="text-end">${yearTotals[k].toFixed(1)}</td>`).join('')}</tr></tbody>
-        </table>
-        <div class="row mt-4"><div class="col-md-6"><p>Директор департамента УМР _________________ О.С. Пхенда</p><p>Зав. кафедрой _________________</p></div><div class="col-md-6 text-md-end"><p>Декан/Директор _________________</p><p>Преподаватель _________________ ${escapeHtml(teacherName)}</p></div></div>
-    </div>
-</div>
-<div class="text-center mt-4 no-print"><button class="btn btn-primary" onclick="window.print();">Печать</button> <button class="btn btn-secondary" onclick="window.close();">Закрыть</button></div>
-</body>
-</html>`;
+    `;
 }
 
-function calcTotals(disciplines) {
-    const t = { lectures:0, lpz:0, extraWork:0, consultations:0, exams:0, credits:0, courseWorks:0, courseProjects:0, controlWorks:0, briefing:0, guidance:0, defenseReports:0, wkrSupervision:0, reviewLectures:0, sek:0, postgraduate:0, management:0, budget:0, extraBudget:0, total:0 };
-    for (const d of disciplines) {
-        t.lectures += d.lectures || 0;
-        t.lpz += d.practical || 0;
-        t.exams += d.exams || 0;
-        t.credits += d.tests || 0;
-        t.budget += d.budgetHours || 0;
-        t.extraBudget += d.extraHours || 0;
-        t.total += d.hoursTotal || 0;
+function computeTotals(disciplines) {
+    let totals = {
+        lectures:0, lpz:0, extraWork:0, consultations:0, exams:0, credits:0,
+        courseWorks:0, courseProjects:0, controlWorks:0, briefing:0, guidance:0,
+        defenseReports:0, wkrSupervision:0, reviewLectures:0, sek:0, postgraduate:0,
+        management:0, budget:0, extraBudget:0, total:0
+    };
+    for (let d of disciplines) {
+        totals.lectures += d.lectures || 0;
+        totals.lpz += d.practical || 0;
+        totals.exams += d.exams || 0;
+        totals.credits += d.tests || 0;
+        totals.courseWorks += d.kr || 0;
+        totals.courseProjects += d.kp || 0;
+        totals.budget += d.budgetHours || 0;
+        totals.extraBudget += d.extraHours || 0;
+        totals.total += d.hoursTotal || 0;
     }
-    return t;
+    return totals;
 }
 
-function generateSemesterTableHTML(semesterName, disciplines, totals) {
-    if (!disciplines.length) return `<div class="semester-title">${semesterName} <span class="badge bg-secondary">нет дисциплин</span></div><div class="alert alert-light">Нет нагрузки</div>`;
+function buildSemesterTable(title, disciplines, totals) {
+    if (!disciplines.length) {
+        return `<div class="semester-title">${title}</div><div class="alert alert-light">Нет учебной нагрузки</div>`;
+    }
     let rows = '';
-    for (const d of disciplines) {
-        const formBadge = d.studyForm === 'Очная' ? '<span class="form-och">Очная</span>' : '<span class="form-zao">Заочная</span>';
-        rows += `<tr>${[formBadge, escapeHtml(d.direction), escapeHtml(d.discipline), d.course || '—', d.studentsBudget || 0, d.groupsBudget || 0, (d.lectures||0).toFixed(1), (d.practical||0).toFixed(1), 0, 0, (d.exams||0).toFixed(1), (d.tests||0).toFixed(1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (d.budgetHours||0).toFixed(1), (d.extraHours||0).toFixed(1), (d.hoursTotal||0).toFixed(1)].map(c => `<td class="${typeof c === 'number' ? 'text-end' : ''}">${c}</td>`).join('')}</tr>`;
+    for (let d of disciplines) {
+        const formBadge = d.studyForm === 'Очная' ? '<span class="form-badge-och">Очная</span>' : '<span class="form-badge-zao">Заочная</span>';
+        const totalStudents = d.studentsBudget + d.studentsExtra;
+        const totalGroups = d.groupsBudget + d.groupsExtra;
+        rows += `<tr>
+            <td style="white-space: nowrap;">${formBadge}</td>
+            <td>${escapeHtml(d.direction)}</td>
+            <td style="min-width: 180px;">${escapeHtml(d.discipline)}</td>
+            <td>${d.course || '—'}</td>
+            <td class="text-end">${totalStudents}</td>
+            <td class="text-end">${totalGroups}</td>
+            <td class="text-end">${d.lectures.toFixed(1)}</td>
+            <td class="text-end">${d.practical.toFixed(1)}</td>
+            <td class="text-end">0</td>
+            <td class="text-end">0</td>
+            <td class="text-end">${d.exams.toFixed(1)}</td>
+            <td class="text-end">${d.tests.toFixed(1)}</td>
+            <td class="text-end">${d.kr.toFixed(1)}</td>
+            <td class="text-end">${d.kp.toFixed(1)}</td>
+            <td class="text-end">0</td>
+            <td class="text-end">0</td>
+            <td class="text-end">0</td>
+            <td class="text-end">0</td>
+            <td class="text-end">0</td>
+            <td class="text-end">0</td>
+            <td class="text-end">0</td>
+            <td class="text-end">0</td>
+            <td class="text-end">0</td>
+            <td class="text-end">${d.budgetHours.toFixed(1)}</td>
+            <td class="text-end">${d.extraHours.toFixed(1)}</td>
+            <td class="text-end fw-bold">${d.hoursTotal.toFixed(1)}</td>
+        </tr>`;
     }
-    return `<div class="semester-title">${semesterName} <span class="badge bg-primary">${disciplines.length} дисциплин</span></div>
-    <div style="overflow-x:auto"><table class="table table-bordered table-sm"><thead class="table-light"><tr><th>Форма</th><th>Направление</th><th>Дисциплина</th><th>Курс</th><th>Студ.</th><th>Групп</th><th>Лекции</th><th>ЛПЗ</th><th>Отраб.</th><th>Конс.</th><th>Экз.</th><th>Зач.</th><th>КР</th><th>КП</th><th>КР/раб</th><th>Инстр.</th><th>Рук.</th><th>Защ.отч</th><th>Рук.ВКР</th><th>Обз.лек</th><th>ГЭК</th><th>Асп.</th><th>Рук.каф</th><th>Бюджет</th><th>Внебюдж</th><th>Всего</th></tr></thead><tbody>${rows}<tr class="total-row"><td colspan="6"><strong>ИТОГО:</strong></td>${['lectures','lpz','extraWork','consultations','exams','credits','courseWorks','courseProjects','controlWorks','briefing','guidance','defenseReports','wkrSupervision','reviewLectures','sek','postgraduate','management','budget','extraBudget','total'].map(k => `<td class="text-end">${totals[k].toFixed(1)}</td>`).join('')}</tr></tbody></table></div>`;
+    return `
+        <div class="semester-title">${title}</div>
+        <div style="overflow-x: auto;">
+            <table class="table table-bordered table-sm">
+                <thead class="table-secondary">
+                    <tr style="font-size: 9px;">
+                        <th>Форма</th><th>Код напр.</th><th>Наименование направления / специальности</th><th>Курс</th><th>Кол-во обуч.</th><th>Кол-во групп</th>
+                        <th>Лекции</th><th>ЛПЗ</th><th>Отработка</th><th>Консультации</th><th>Экзамены</th><th>Зачеты</th>
+                        <th>КР</th><th>КП</th><th>Контр.раб</th><th>Инструктаж</th><th>Руководство</th><th>Защита отч.</th>
+                        <th>Рук. ВКР</th><th>Обзор.лек</th><th>ГЭК</th><th>Аспиранты</th><th>Рук.каф.</th>
+                        <th>Бюджет</th><th>Внебюджет</th><th>Всего</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows}
+                    <tr class="total-row">
+                        <td colspan="6"><strong>ИТОГО за ${title}</strong></td>
+                        <td class="text-end">${totals.lectures.toFixed(1)}</td>
+                        <td class="text-end">${totals.lpz.toFixed(1)}</td>
+                        <td class="text-end">0</td><td class="text-end">0</td>
+                        <td class="text-end">${totals.exams.toFixed(1)}</td>
+                        <td class="text-end">${totals.credits.toFixed(1)}</td>
+                        <td class="text-end">${totals.courseWorks.toFixed(1)}</td>
+                        <td class="text-end">${totals.courseProjects.toFixed(1)}</td>
+                        <td class="text-end">0</td><td class="text-end">0</td><td class="text-end">0</td><td class="text-end">0</td>
+                        <td class="text-end">0</td><td class="text-end">0</td><td class="text-end">0</td><td class="text-end">0</td><td class="text-end">0</td>
+                        <td class="text-end">${totals.budget.toFixed(1)}</td>
+                        <td class="text-end">${totals.extraBudget.toFixed(1)}</td>
+                        <td class="text-end fw-bold">${totals.total.toFixed(1)}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    `;
 }
 
-function collectTeacherDisciplines(teacherName) {
-    const result = [];
-    for (const disc of allDisciplines) {
-        if (currentAssignments[getRowKey(disc)] === teacherName) result.push(disc);
-    }
-    return result;
-}
-
-function getTeacherInfo(teacherName) {
-    const t = currentTeachers.find(t => t.fullName === teacherName);
-    return { position: t?.position || 'преподаватель', degree: t?.degree || '', title: t?.title || '', employmentType: 'штатный' };
-}
-
-function generateAllAssignmentCards() {
+function generateAllCards() {
     if (!currentTeachers.length) { alert('Сначала загрузите состав кафедры'); return; }
-    const teachersWithLoad = new Set();
-    for (const disc of allDisciplines) {
-        const teacher = currentAssignments[getRowKey(disc)];
+    let teachersWithLoad = new Set();
+    for (let disc of allDisciplines) {
+        let teacher = currentAssignments[getRowKey(disc)];
         if (teacher) teachersWithLoad.add(teacher);
     }
-    if (!teachersWithLoad.size) { alert('Нет назначенных дисциплин'); return; }
-    const win = window.open('', '_blank');
-    win.document.write('<!DOCTYPE html><html><head><title>Карточки учебных поручений</title></head><body><div id="cards"></div></body></html>');
+    if (teachersWithLoad.size === 0) { alert('Нет назначенных дисциплин'); return; }
+    let win = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Карточки учебных поручений (1 и 2 семестр)</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"><style>body{background:#e9ecef;padding:20px;} .card-portfolio{margin-bottom:40px; page-break-after:always;} .form-badge-och,.form-badge-zao{font-size:8px;} .table th,.table td{font-size:9px;}</style></head><body><div class="container">`);
+    for (let teacher of teachersWithLoad) {
+        let teacherDiscs = allDisciplines.filter(d => currentAssignments[getRowKey(d)] === teacher);
+        let teacherInfo = currentTeachers.find(t => t.fullName === teacher) || { fullName: teacher, position: 'преподаватель', degree: '', title: '' };
+        win.document.write(generateTeacherCards(teacher, teacherInfo, teacherDiscs, "2025 / 2026"));
+    }
+    win.document.write(`<div class="text-center mt-4 no-print"><button class="btn btn-primary" onclick="window.print();">Печать всех карточек</button> <button class="btn btn-secondary" onclick="window.close();">Закрыть</button></div></div></body></html>`);
     win.document.close();
-    let html = '';
-    for (const teacher of teachersWithLoad) {
-        html += generateTeacherAssignmentCard(teacher, getTeacherInfo(teacher), collectTeacherDisciplines(teacher), "2025 / 2026");
-        html += '<div style="page-break-after: always;"></div>';
-    }
-    win.document.getElementById('cards').innerHTML = html;
-}
-
-// ==================== ЗАГРУЗКА ДАННЫХ ====================
-function loadTeachers(fileData) {
-    currentTeachers = [];
-    for (let i = 1; i < fileData.length; i++) {
-        let row = fileData[i];
-        if (!row || row.length < 3) continue;
-        let lastName = (row[0] || '').toString().trim();
-        let firstName = (row[1] || '').toString().trim();
-        let middleName = (row[2] || '').toString().trim();
-        let position = (row[5] || '').toString().trim() || 'преподаватель';
-        if (!lastName) continue;
-        let fullName = lastName;
-        if (firstName) fullName += ' ' + firstName.charAt(0) + '.';
-        if (middleName) fullName += ' ' + middleName.charAt(0) + '.';
-        currentTeachers.push({ fullName, position, degree: '', title: '' });
-    }
-    document.getElementById('teachersCount').textContent = currentTeachers.length;
-    alert(`Загружено ${currentTeachers.length} преподавателей`);
-    if (allDisciplines.length) renderFullTable();
-    updateStatistics();
 }
 
 function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
 
-// ==================== СОБЫТИЯ ====================
+// ========== СОБЫТИЯ ==========
 document.getElementById('processBtn').addEventListener('click', () => {
     let file = document.getElementById('fileInput').files[0];
     if (!file) { alert('Выберите файл нагрузки'); return; }
@@ -635,7 +588,8 @@ document.getElementById('processBtn').addEventListener('click', () => {
         let sheet = workbook.Sheets[workbook.SheetNames[0]];
         let raw = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
         parseExcelFile(raw);
-        loadAssignmentsFromStorage();
+        let saved = localStorage.getItem('teacherAssignments_full');
+        if (saved) try { currentAssignments = JSON.parse(saved); } catch(e) { currentAssignments = {}; }
         updateStatistics();
         renderFullTable();
         document.getElementById('assignmentControls').style.display = 'block';
@@ -667,36 +621,7 @@ document.getElementById('resetAssignmentsBtn')?.addEventListener('click', () => 
         updateStatistics();
     }
 });
-document.getElementById('showTeacherCardsBtn')?.addEventListener('click', () => {
-    let teacherDiscs = new Map();
-    for (let disc of allDisciplines) {
-        let teacher = currentAssignments[getRowKey(disc)];
-        if (!teacher) continue;
-        if (!teacherDiscs.has(teacher)) teacherDiscs.set(teacher, { disciplines: [], position: '' });
-        teacherDiscs.get(teacher).disciplines.push(disc);
-        teacherDiscs.get(teacher).position = currentTeachers.find(t => t.fullName === teacher)?.position || '';
-    }
-    if (!teacherDiscs.size) { alert('Нет назначенных дисциплин'); return; }
-    let html = '<!DOCTYPE html><html><head><title>Карточки ППС</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head><body>';
-    for (let [name, data] of teacherDiscs) {
-        let total = data.disciplines.reduce((s,d)=>s+d.hoursTotal,0);
-        html += `<div class="card m-3"><div class="card-header bg-primary text-white"><h4>${escapeHtml(name)}</h4><p>${escapeHtml(data.position)} | ${data.disciplines.length} дисц. | ${total.toFixed(1)} ч</p></div><div class="card-body">${buildDisciplineTableSimple(data.disciplines)}</div></div>`;
-    }
-    html += '<div class="text-center m-3"><button onclick="window.print()" class="btn btn-primary">Печать</button></div></body></html>';
-    let win = window.open();
-    win.document.write(html);
-    win.document.close();
-});
-document.getElementById('exportDataBtn')?.addEventListener('click', () => {
-    let wsData = [['Направление', 'Форма', ...columnNames.slice(0,73), 'Преподаватель']];
-    for (let d of allDisciplines) {
-        wsData.push([d.direction, d.studyForm, ...d.cells.slice(0,73), currentAssignments[getRowKey(d)] || '']);
-    }
-    let ws = XLSX.utils.aoa_to_sheet(wsData);
-    let wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Нагрузка_полная');
-    XLSX.writeFile(wb, 'нагрузка_кафедры.xlsx');
-});
+document.getElementById('generateCardsBtn')?.addEventListener('click', generateAllCards);
 document.getElementById('clearFiltersBtn')?.addEventListener('click', () => {
     document.getElementById('disciplineFilter').value = '';
     document.getElementById('directionFilter').value = '';
@@ -706,22 +631,11 @@ document.getElementById('clearFiltersBtn')?.addEventListener('click', () => {
     document.getElementById('assignmentFilter').value = 'all';
     renderFullTable();
 });
-document.getElementById('generateAssignmentCardsBtn')?.addEventListener('click', generateAllAssignmentCards);
 
 ['disciplineFilter', 'directionFilter', 'formFilter', 'semesterFilter', 'courseFilter', 'assignmentFilter'].forEach(id => {
     let el = document.getElementById(id);
     if (el) el.addEventListener('change', () => renderFullTable());
-    if (el && id !== 'assignmentFilter') el.addEventListener('input', () => renderFullTable());
 });
-
-function buildDisciplineTableSimple(disciplines) {
-    let html = '<table class="table table-bordered table-sm"><tr><th>Форма</th><th>Дисциплина</th><th>Семестр</th><th>Часы</th></tr>';
-    for (let d of disciplines) {
-        html += `<tr><td>${d.studyForm}</td><td>${escapeHtml(d.discipline)}</td><td>${d.semester || '-'}</td><td>${d.hoursTotal.toFixed(1)}</td></tr>`;
-    }
-    html += '</table>';
-    return html;
-}
 </script>
 </body>
 </html>
