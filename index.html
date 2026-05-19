@@ -29,6 +29,7 @@
         .form-badge-och { background-color: #0d6efd; color: white; padding: 2px 6px; border-radius: 4px; font-size: 8px; display: inline-block; white-space: nowrap; }
         .form-badge-zao { background-color: #fd7e14; color: white; padding: 2px 6px; border-radius: 4px; font-size: 8px; display: inline-block; white-space: nowrap; }
         .header-signatures { margin-top: 25px; border-top: 1px solid #dee2e6; padding-top: 20px; }
+        .copy-btn-card { position: relative; top: 0; right: 0; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -122,6 +123,19 @@ function getColumnLetter(idx) {
     return letters[idx] || String(idx);
 }
 
+// Форматирование чисел с запятой вместо точки
+function formatNumber(num) {
+    if (num === undefined || num === null) return '0';
+    let n = Number(num);
+    if (isNaN(n)) return '0';
+    // Округляем до одного знака, заменяем точку на запятую
+    let formatted = n.toFixed(1).replace('.', ',');
+    // Дополнительно разделяем разряды целой части (опционально, но по заданию "с , но не точкой")
+    let parts = formatted.split(',');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return parts.join(',');
+}
+
 // ==================== ПАРСИНГ ФАЙЛА НАГРУЗКИ ====================
 function parseExcelFile(rawData) {
     allDisciplines = [];
@@ -134,6 +148,7 @@ function parseExcelFile(rawData) {
 
 function parseFormRange(rawData, startRow, endRow, studyForm) {
     let lastDirection = '';
+    let lastDirectionCode = '';
     for (let i = startRow; i <= endRow && i < rawData.length; i++) {
         let row = rawData[i];
         if (!row || row.length === 0) continue;
@@ -146,8 +161,13 @@ function parseFormRange(rawData, startRow, endRow, studyForm) {
              colA.includes('Продукты') || colA.startsWith('z36') || colA === 'ОЧНАЯ ФОРМА' || colA === 'ЗАОЧНАЯ ФОРМА')) {
             isDirection = true;
             if (!colA.includes('ФОРМА')) {
-                lastDirection = colA;
-                directionSet.add(lastDirection);
+                // Разделяем код и название направления
+                let parts = colA.split(/\s+/);
+                let code = parts[0];
+                let name = parts.slice(1).join(' ');
+                lastDirectionCode = code;
+                lastDirection = name;
+                directionSet.add(colA);
             }
             continue;
         }
@@ -175,7 +195,9 @@ function parseFormRange(rawData, startRow, endRow, studyForm) {
             allDisciplines.push({
                 rowIndex: i,
                 studyForm: studyForm,
-                direction: lastDirection || (colA.length > 5 ? colA : 'Направление'),
+                directionCode: lastDirectionCode || '',
+                directionName: lastDirection || (colA.length > 5 ? colA : 'Направление'),
+                directionFull: colA,
                 discipline: discipline,
                 semester: semester,
                 course: course,
@@ -278,7 +300,7 @@ function renderFullTable() {
     let filterAssign = document.getElementById('assignmentFilter')?.value || 'all';
 
     let filtered = allDisciplines.filter(d => {
-        if (filterDir && d.direction !== filterDir) return false;
+        if (filterDir && d.directionFull !== filterDir) return false;
         if (filterForm && d.studyForm !== filterForm) return false;
         if (filterSem && d.semester != filterSem) return false;
         if (filterCourse && d.course !== filterCourse) return false;
@@ -314,7 +336,7 @@ function renderFullTable() {
         let tr = document.createElement('tr');
         let rowKey = getRowKey(d);
         let teacher = currentAssignments[rowKey] || '';
-        let tdDir = document.createElement('td'); tdDir.textContent = d.direction; tdDir.style.whiteSpace = 'nowrap'; tr.appendChild(tdDir);
+        let tdDir = document.createElement('td'); tdDir.textContent = d.directionFull; tdDir.style.whiteSpace = 'nowrap'; tr.appendChild(tdDir);
         let tdForm = document.createElement('td'); tdForm.innerHTML = `<span class="study-form-badge ${d.studyForm === 'Очная' ? 'form-och' : 'form-zao'}">${d.studyForm === 'Очная' ? '🏫 Очная' : '🌙 Заочная'}</span>`; tr.appendChild(tdForm);
         for (let i = 0; i <= 72; i++) {
             let td = document.createElement('td');
@@ -393,42 +415,43 @@ function showSummaryModal() {
     let sorted = [...teacherMap.entries()].sort();
     let thead = document.getElementById('summaryHeader');
     let tbody = document.getElementById('summaryBody');
-    thead.innerHTML = `<table><th>Преподаватель</th><th>Должность</th><th>Всего часов</th><th>Ставки</th><th>Дисциплин</th></tr>`;
+    thead.innerHTML = `<tr><th>Преподаватель</th><th>Должность</th><th>Всего часов</th><th>Ставки</th><th>Дисциплин</th></tr>`;
     tbody.innerHTML = '';
     let grandTotal = 0;
     for (let [name, data] of sorted) {
         let pos = currentTeachers.find(t => t.fullName === name)?.position || '';
         grandTotal += data.total;
         let tr = document.createElement('tr');
-        tr.innerHTML = `<td><strong>${escapeHtml(name)}</strong></td><td>${escapeHtml(pos)}</td><td class="text-end">${data.total.toFixed(1)}</td><td class="text-end">${(data.total/RATE_HOURS).toFixed(2)}</td><td class="text-end">${data.count}</td>`;
+        tr.innerHTML = `<td><strong>${escapeHtml(name)}</strong></td><td>${escapeHtml(pos)}</td><td class="text-end">${formatNumber(data.total)}</td><td class="text-end">${(data.total/RATE_HOURS).toFixed(2)}</td><td class="text-end">${data.count}</td>`;
         tbody.appendChild(tr);
     }
     let totalTr = document.createElement('tr');
     totalTr.className = 'table-info';
-    totalTr.innerHTML = `<td colspan="2"><strong>ИТОГО ПО КАФЕДРЕ</strong></td><td class="fw-bold">${grandTotal.toFixed(1)}</td><td class="fw-bold">${(grandTotal/RATE_HOURS).toFixed(2)}</td><td></td>`;
+    totalTr.innerHTML = `<td colspan="2"><strong>ИТОГО ПО КАФЕДРЕ</strong></td><td class="fw-bold">${formatNumber(grandTotal)}</td><td class="fw-bold">${(grandTotal/RATE_HOURS).toFixed(2)}</td><td class="fw-bold"></td>`;
     tbody.appendChild(totalTr);
     new bootstrap.Modal(document.getElementById('summaryModal')).show();
 }
 
-// ==================== ГЕНЕРАЦИЯ КАРТОЧЕК ПО СЕМЕСТРАМ (1 и 2 семестр) ====================
+// ==================== ГЕНЕРАЦИЯ КАРТОЧЕК ПО СЕМЕСТРАМ ====================
 function generateTeacherCards(teacherName, teacherInfo, allTeacherDiscs, academicYear = "2025 / 2026") {
-    // Разделение на четный (2) и нечетный (1) семестры
     const firstSemesterDiscs = allTeacherDiscs.filter(d => d.semester && d.semester % 2 === 1);
     const secondSemesterDiscs = allTeacherDiscs.filter(d => d.semester && d.semester % 2 === 0);
-    // сортировка по семестру
     firstSemesterDiscs.sort((a,b) => (a.semester || 99) - (b.semester || 99));
     secondSemesterDiscs.sort((a,b) => (a.semester || 99) - (b.semester || 99));
-    
     const firstTotals = computeTotals(firstSemesterDiscs);
     const secondTotals = computeTotals(secondSemesterDiscs);
-    
     const yearTotalHours = firstTotals.total + secondTotals.total;
     const stavka = (yearTotalHours / RATE_HOURS).toFixed(2);
     
+    const cardId = "card_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
+    
     return `
-        <div class="card-portfolio mb-5" style="page-break-after: always;">
+        <div class="card-portfolio mb-5" style="page-break-after: always;" id="${cardId}">
             <div class="card-header-custom">
-                <h4>Карточка учебных поручений</h4>
+                <div class="d-flex justify-content-between align-items-start">
+                    <h4 class="mb-0">Карточка учебных поручений</h4>
+                    <button class="btn btn-sm btn-light copy-btn-card" onclick="copyCardContent('${cardId}')">📋 Копировать карточку</button>
+                </div>
                 <div class="row mt-2">
                     <div class="col-md-7">
                         <p><strong>Преподаватель:</strong> ${escapeHtml(teacherName)}<br>
@@ -437,7 +460,7 @@ function generateTeacherCards(teacherName, teacherInfo, allTeacherDiscs, academi
                     </div>
                     <div class="col-md-5 text-md-end">
                         <p><strong>Ставка:</strong> ${stavka}<br>
-                        <strong>Часов:</strong> ${yearTotalHours.toFixed(1)}<br>
+                        <strong>Часов:</strong> ${formatNumber(yearTotalHours)}<br>
                         <strong>Учебный год:</strong> ${academicYear}</p>
                     </div>
                 </div>
@@ -445,7 +468,6 @@ function generateTeacherCards(teacherName, teacherInfo, allTeacherDiscs, academi
             <div class="p-3">
                 ${buildSemesterTable("I семестр", firstSemesterDiscs, firstTotals)}
                 ${buildSemesterTable("II семестр", secondSemesterDiscs, secondTotals)}
-                
                 <div class="row header-signatures">
                     <div class="col-md-6">
                         <p>Директор департамента УМР _________________ О.С. Пхенда</p>
@@ -493,31 +515,24 @@ function buildSemesterTable(title, disciplines, totals) {
         const totalGroups = d.groupsBudget + d.groupsExtra;
         rows += `<tr>
             <td style="white-space: nowrap;">${formBadge}</td>
-            <td>${escapeHtml(d.direction)}</td>
-            <td style="min-width: 180px;">${escapeHtml(d.discipline)}</td>
+            <td>${escapeHtml(d.directionCode)}</td>
+            <td style="min-width: 200px;">${escapeHtml(d.directionName)}</td>
+            <td>${escapeHtml(d.discipline)}</td>
             <td>${d.course || '—'}</td>
-            <td class="text-end">${totalStudents}</td>
-            <td class="text-end">${totalGroups}</td>
-            <td class="text-end">${d.lectures.toFixed(1)}</td>
-            <td class="text-end">${d.practical.toFixed(1)}</td>
+            <td class="text-end">${formatNumber(totalStudents)}</td>
+            <td class="text-end">${formatNumber(totalGroups)}</td>
+            <td class="text-end">${formatNumber(d.lectures)}</td>
+            <td class="text-end">${formatNumber(d.practical)}</td>
             <td class="text-end">0</td>
             <td class="text-end">0</td>
-            <td class="text-end">${d.exams.toFixed(1)}</td>
-            <td class="text-end">${d.tests.toFixed(1)}</td>
-            <td class="text-end">${d.kr.toFixed(1)}</td>
-            <td class="text-end">${d.kp.toFixed(1)}</td>
-            <td class="text-end">0</td>
-            <td class="text-end">0</td>
-            <td class="text-end">0</td>
-            <td class="text-end">0</td>
-            <td class="text-end">0</td>
-            <td class="text-end">0</td>
-            <td class="text-end">0</td>
-            <td class="text-end">0</td>
-            <td class="text-end">0</td>
-            <td class="text-end">${d.budgetHours.toFixed(1)}</td>
-            <td class="text-end">${d.extraHours.toFixed(1)}</td>
-            <td class="text-end fw-bold">${d.hoursTotal.toFixed(1)}</td>
+            <td class="text-end">${formatNumber(d.exams)}</td>
+            <td class="text-end">${formatNumber(d.tests)}</td>
+            <td class="text-end">${formatNumber(d.kr)}</td>
+            <td class="text-end">${formatNumber(d.kp)}</td>
+            <td class="text-end">0</td><td class="text-end">0</td><td class="text-end">0</td><td class="text-end">0</td>
+            <td class="text-end">0</td><td class="text-end">0</td><td class="text-end">0</td><td class="text-end">0</td>
+            <td class="text-end">${formatNumber(d.budgetHours)}</td>
+            <td class="text-end">${formatNumber(d.extraHours)}</td>
         </tr>`;
     }
     return `
@@ -526,29 +541,35 @@ function buildSemesterTable(title, disciplines, totals) {
             <table class="table table-bordered table-sm">
                 <thead class="table-secondary">
                     <tr style="font-size: 9px;">
-                        <th>Форма</th><th>Код напр.</th><th>Наименование направления / специальности</th><th>Курс</th><th>Кол-во обуч.</th><th>Кол-во групп</th>
-                        <th>Лекции</th><th>ЛПЗ</th><th>Отработка</th><th>Консультации</th><th>Экзамены</th><th>Зачеты</th>
-                        <th>КР</th><th>КП</th><th>Контр.раб</th><th>Инструктаж</th><th>Руководство</th><th>Защита отч.</th>
-                        <th>Рук. ВКР</th><th>Обзор.лек</th><th>ГЭК</th><th>Аспиранты</th><th>Рук.каф.</th>
-                        <th>Бюджет</th><th>Внебюджет</th><th>Всего</th>
+                        <th>Форма</th>
+                        <th>Код направления подготовки / Специальности</th>
+                        <th>Наименование направления подготовки / специальности</th>
+                        <th>Дисциплина / вид учебной работы</th>
+                        <th>Курс</th>
+                        <th>Кол-во обуч.</th>
+                        <th>Кол-во групп</th>
+                        <th>Лекции</th><th>ЛПЗ</th><th>Отработка</th><th>Консультации</th>
+                        <th>Экзамены</th><th>Зачеты</th><th>КР</th><th>КП</th><th>Контр.раб</th>
+                        <th>Инструктаж</th><th>Руководство</th><th>Защита отч.</th><th>Рук. ВКР</th>
+                        <th>Обзор.лек</th><th>ГЭК</th><th>Аспиранты</th><th>Рук.каф.</th>
+                        <th>Бюджет</th><th>Внебюджет</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${rows}
                     <tr class="total-row">
-                        <td colspan="6"><strong>ИТОГО за ${title}</strong></td>
-                        <td class="text-end">${totals.lectures.toFixed(1)}</td>
-                        <td class="text-end">${totals.lpz.toFixed(1)}</td>
+                        <td colspan="7"><strong>ИТОГО за ${title}</strong></td>
+                        <td class="text-end">${formatNumber(totals.lectures)}</td>
+                        <td class="text-end">${formatNumber(totals.lpz)}</td>
                         <td class="text-end">0</td><td class="text-end">0</td>
-                        <td class="text-end">${totals.exams.toFixed(1)}</td>
-                        <td class="text-end">${totals.credits.toFixed(1)}</td>
-                        <td class="text-end">${totals.courseWorks.toFixed(1)}</td>
-                        <td class="text-end">${totals.courseProjects.toFixed(1)}</td>
+                        <td class="text-end">${formatNumber(totals.exams)}</td>
+                        <td class="text-end">${formatNumber(totals.credits)}</td>
+                        <td class="text-end">${formatNumber(totals.courseWorks)}</td>
+                        <td class="text-end">${formatNumber(totals.courseProjects)}</td>
                         <td class="text-end">0</td><td class="text-end">0</td><td class="text-end">0</td><td class="text-end">0</td>
-                        <td class="text-end">0</td><td class="text-end">0</td><td class="text-end">0</td><td class="text-end">0</td><td class="text-end">0</td>
-                        <td class="text-end">${totals.budget.toFixed(1)}</td>
-                        <td class="text-end">${totals.extraBudget.toFixed(1)}</td>
-                        <td class="text-end fw-bold">${totals.total.toFixed(1)}</td>
+                        <td class="text-end">0</td><td class="text-end">0</td><td class="text-end">0</td><td class="text-end">0</td>
+                        <td class="text-end">${formatNumber(totals.budget)}</td>
+                        <td class="text-end">${formatNumber(totals.extraBudget)}</td>
                     </tr>
                 </tbody>
             </table>
@@ -565,7 +586,25 @@ function generateAllCards() {
     }
     if (teachersWithLoad.size === 0) { alert('Нет назначенных дисциплин'); return; }
     let win = window.open('', '_blank');
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Карточки учебных поручений (1 и 2 семестр)</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"><style>body{background:#e9ecef;padding:20px;} .card-portfolio{margin-bottom:40px; page-break-after:always;} .form-badge-och,.form-badge-zao{font-size:8px;} .table th,.table td{font-size:9px;}</style></head><body><div class="container">`);
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Карточки учебных поручений (1 и 2 семестр)</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"><style>
+        body{background:#e9ecef;padding:20px;} .card-portfolio{margin-bottom:40px; page-break-after:always;} 
+        .form-badge-och,.form-badge-zao{font-size:8px;} .table th,.table td{font-size:9px;}
+        .copy-btn-card{position:relative; top:0; right:0;}
+    </style>
+    <script>
+        function copyCardContent(cardId) {
+            const cardElement = document.getElementById(cardId);
+            if (!cardElement) return;
+            const cloneCard = cardElement.cloneNode(true);
+            const copyBtn = cloneCard.querySelector('.copy-btn-card');
+            if(copyBtn) copyBtn.remove();
+            const htmlContent = cloneCard.outerHTML;
+            navigator.clipboard.writeText(htmlContent).then(() => {
+                alert('Карточка скопирована в буфер обмена (HTML)');
+            }).catch(() => alert('Не удалось скопировать'));
+        }
+    <\/script>
+    </head><body><div class="container">`);
     for (let teacher of teachersWithLoad) {
         let teacherDiscs = allDisciplines.filter(d => currentAssignments[getRowKey(d)] === teacher);
         let teacherInfo = currentTeachers.find(t => t.fullName === teacher) || { fullName: teacher, position: 'преподаватель', degree: '', title: '' };
